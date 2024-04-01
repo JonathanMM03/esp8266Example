@@ -1,0 +1,100 @@
+#include <SoftwareSerial.h>
+
+SoftwareSerial esp01(2, 3);  // Configurar SoftwareSerial en los pines 2 (RX) y 3 (TX) del Arduino
+
+const int pinLedR = 9;   // Pin PWM para el LED rojo
+const int pinLedG = 10;  // Pin PWM para el LED verde
+const int pinLedB = 11;  // Pin PWM para el LED azul
+
+void setup() {
+  // Inicialización de la comunicación serial
+  Serial.begin(9600);
+  esp01.begin(1200);  // Inicialización de SoftwareSerial
+
+  // Configuración de los pines como salidas
+  pinMode(pinLedR, OUTPUT);
+  pinMode(pinLedG, OUTPUT);
+  pinMode(pinLedB, OUTPUT);
+}
+
+void loop() {
+  if (esp01.available() > 0) {
+    // Leer la cadena recibida por el ESP01
+    String buffer = esp01.readStringUntil('\n');
+    Serial.println(buffer);
+
+    // Encontrar las posiciones de los valores de R, G y B en la cadena
+    int rIndex = buffer.indexOf("R:");
+    int gIndex = buffer.indexOf("G:");
+    int bIndex = buffer.indexOf("B:");
+
+    // Verificar si se encontraron todas las etiquetas
+    if (rIndex != -1 && gIndex != -1 && bIndex != -1) {
+      // Obtener los substrings que contienen los valores de R, G y B
+      String rSubstring = buffer.substring(rIndex + 2, gIndex);  // +2 para omitir "R: "
+      String gSubstring = buffer.substring(gIndex + 2, bIndex);  // +2 para omitir "G: "
+      String bSubstring = buffer.substring(bIndex + 2);          // +2 para omitir "B: "
+
+      // Convertir los substrings a enteros
+      int rValue = rSubstring.toInt();
+      int gValue = gSubstring.toInt();
+      int bValue = bSubstring.toInt();
+
+      // Asegurar que los valores estén en el rango adecuado (0-255)
+      rValue = constrain(rValue, 0, 255);
+      gValue = constrain(gValue, 0, 255);
+      bValue = constrain(bValue, 0, 255);
+
+      // Llamar a la función changeColor para actualizar el color
+      changeColor(rValue, gValue, bValue);
+    }
+  }
+
+  if(Serial.available() > 0){
+    String buffer = Serial.readStringUntil('\n');
+    Serial.println(buffer);
+    esp01.println(buffer);
+
+    // Encontrar las posiciones de los valores de R, G y B en la cadena
+    int rIndex = buffer.indexOf("R:");
+    int gIndex = buffer.indexOf("G:");
+    int bIndex = buffer.indexOf("B:");
+
+    // Verificar si se encontraron todas las etiquetas
+    if (rIndex != -1 && gIndex != -1 && bIndex != -1) {
+      // Obtener los substrings que contienen los valores de R, G y B
+      String rSubstring = buffer.substring(rIndex + 2, gIndex);  // +2 para omitir "R: "
+      String gSubstring = buffer.substring(gIndex + 2, bIndex);  // +2 para omitir "G: "
+      String bSubstring = buffer.substring(bIndex + 2);          // +2 para omitir "B: "
+
+      // Convertir los substrings a enteros
+      int rValue = rSubstring.toInt();
+      int gValue = gSubstring.toInt();
+      int bValue = bSubstring.toInt();
+
+      // Asegurar que los valores estén en el rango adecuado (0-255)
+      rValue = constrain(rValue, 0, 255);
+      gValue = constrain(gValue, 0, 255);
+      bValue = constrain(bValue, 0, 255);
+
+      // Llamar a la función changeColor para actualizar el color
+      changeColor(rValue, gValue, bValue);
+    } 
+  }
+}
+
+void changeColor(int r, int g, int b) {
+  // Aplicar los valores a los pines PWM
+  analogWrite(pinLedR, r);
+  analogWrite(pinLedG, g);
+  analogWrite(pinLedB, b);
+
+  // Imprimir los valores en formato #rrggbb en el monitor serial
+  Serial.print("Cambio de color - #");
+  if (r < 16) Serial.print("0"); // Asegurar que cada componente sea de dos dígitos
+  Serial.print(r, HEX);
+  if (g < 16) Serial.print("0");
+  Serial.print(g, HEX);
+  if (b < 16) Serial.print("0");
+  Serial.println(b, HEX);
+}
